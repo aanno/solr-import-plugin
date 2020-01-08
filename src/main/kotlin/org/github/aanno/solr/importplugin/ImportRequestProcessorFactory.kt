@@ -1,12 +1,17 @@
 package org.github.aanno.solr.importplugin
 
+import org.apache.solr.common.util.NamedList
 import org.apache.solr.request.SolrQueryRequest
 import org.apache.solr.response.SolrQueryResponse
 import org.apache.solr.update.processor.UpdateRequestProcessor
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory
-import java.lang.NullPointerException
+import org.slf4j.LoggerFactory
+import java.lang.invoke.MethodHandles
 
 class ImportRequestProcessorFactory : UpdateRequestProcessorFactory() {
+
+    private val log =
+        LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
     override fun getInstance(
         req: SolrQueryRequest?,
@@ -18,4 +23,16 @@ class ImportRequestProcessorFactory : UpdateRequestProcessorFactory() {
         }
         return ImportRequestProcessor(next);
     }
+
+    override fun init(args: NamedList<*>?) {
+        // could process the Node
+        super.init(args)
+        log.warn("ImportRequestProcessorFactory.init")
+        if (args != null) {
+            for (entry in args) {
+                log.warn(entry.toString())
+            }
+        }
+    }
+
 }
