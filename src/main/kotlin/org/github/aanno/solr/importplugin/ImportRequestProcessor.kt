@@ -42,7 +42,7 @@ class ImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProces
         next?.processCommit(cmd)
     }
 
-    protected override fun doClose() {
+    override fun doClose() {
         super.doClose();
         log.warn("doClose")
     }

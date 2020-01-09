@@ -24,6 +24,7 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
+    api("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.3.3")
     api("org.apache.solr", "solr-core", "8.4.0") {
         exclude("org.restlet.jee", "org.restlet")
         exclude("org.restlet.jee", "org.restlet.ext.servlet")
