@@ -10,7 +10,7 @@ plugins {
 val myShadow by configurations.creating {
     extendsFrom(configurations["shadow"], configurations["runtimeClasspath"])
     exclude("org.apache.solr")
-    exclude("org.apache.tika")
+    // exclude("org.apache.tika")
     exclude("org.restlet.jee")
 }
 

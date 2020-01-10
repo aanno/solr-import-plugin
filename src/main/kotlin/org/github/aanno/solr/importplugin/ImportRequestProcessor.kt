@@ -73,7 +73,9 @@ class ImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProces
                     "/home2/tpasch/java/solr-8.3.1/example/exampledocs/solr-word.pdf"))
             extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, this)
         }
-        next?.processAdd(cmd)
+        if (cmd?.solrDoc?.getField("id") != null) {
+            next?.processAdd(cmd)
+        }
     }
 
     @Throws(IOException::class)
