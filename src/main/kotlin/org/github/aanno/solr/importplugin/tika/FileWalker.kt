@@ -29,6 +29,7 @@ class FileWalker(val base: Path, val pattern: Pattern) {
 
 fun main(args: Array<String>) {
     val fw = FileWalker(Paths.get("/home2/tpasch/java/solr-8.3.1/example/exampledocs/"), Pattern.compile("."))
+    fw.walk()
     runBlocking {     // but this expression blocks the main thread
         delay(20000L)  // ... while we delay for 2 seconds to keep JVM alive
     }
