@@ -31,6 +31,7 @@ dependencies {
     }
     // api("org.apache.solr", "solr-cell", "8.4.0")
     api("org.apache.tika", "tika-core", "1.23")
+    api("org.json", "json", "20190722")
 
     testImplementation("junit", "junit", "4.12")
 }
