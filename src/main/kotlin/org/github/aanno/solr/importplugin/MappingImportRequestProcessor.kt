@@ -1,5 +1,6 @@
 package org.github.aanno.solr.importplugin
 
+import org.apache.solr.common.SolrInputDocument
 import org.apache.solr.common.SolrInputField
 import org.apache.solr.update.AddUpdateCommand
 import org.apache.solr.update.CommitUpdateCommand
@@ -39,8 +40,10 @@ class MappingImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReques
         // json.put("title", json.get("dc:title"))
         json.put("format", json.get("dc:format"))
         json.put("_version_", json.get("pdf:docinfo:modified"))
-        req.json = json as Map<String, Object>
+        // ???
+        /// req.json = json as Map<String, Object>
         val result = AddUpdateCommand(req)
+        result.solrDoc = SolrInputDocument(toInputDocMap(json as Map<String, Any>))
         return result
     }
 
@@ -88,5 +91,16 @@ fun <R> toSupplier(lambda: () -> R): Supplier<R> {
 
 fun <T, U> toBiConsumer(lambda: (T, U) -> Unit): BiConsumer<T, U> {
     return BiConsumer(lambda)
+}
+
+fun toInputDocMap(json: Map<String,Any>): Map<String, SolrInputField> {
+    val result: MutableMap<String, SolrInputField> = HashMap()
+    for (k in json.keys) {
+        val v = json.get(k)
+        val sif = SolrInputField(k)
+        sif.value = v
+        result.put(k, sif)
+    }
+    return result
 }
 
