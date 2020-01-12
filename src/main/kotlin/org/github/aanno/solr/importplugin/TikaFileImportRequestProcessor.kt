@@ -1,36 +1,27 @@
 package org.github.aanno.solr.importplugin
 
 import org.apache.solr.common.SolrException
-import org.apache.solr.common.SolrInputField
 import org.apache.solr.common.util.ContentStreamBase
-import org.apache.solr.common.util.Hash
 import org.apache.solr.handler.extraction.ExtractingDocumentLoader
 import org.apache.solr.handler.extraction.ParseContextConfig
 import org.apache.solr.handler.extraction.SolrContentHandlerFactory
-import org.apache.solr.request.SolrQueryRequestBase
 import org.apache.solr.response.SolrQueryResponse
 import org.apache.solr.update.*
 import org.apache.solr.update.processor.UpdateRequestProcessor
 import org.apache.tika.config.TikaConfig
 import org.apache.tika.exception.TikaException
-import org.jose4j.json.internal.json_simple.JSONObject
 import org.slf4j.LoggerFactory
 import org.xml.sax.SAXException
 import java.io.File
 import java.io.IOException
 import java.lang.invoke.MethodHandles
-import java.util.HashMap
-import java.util.function.BiConsumer
-import java.util.function.Supplier
-import java.util.stream.Collectors
 
-// typealias Supplier<R> = () -> R
-/// typealias BiConsumer<R, U, T> = (T, U) -> Unit
-
-class ImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProcessor(next) {
+class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProcessor(next) {
 
     private val log =
         LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
+
+    private val mapping = MappingImportRequestProcessor(next)
 
     // TODO (tp)
     private val parseContextConfig: ParseContextConfig = ParseContextConfig()
@@ -44,7 +35,7 @@ class ImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProces
     var first = true
 
     init {
-        log.warn("ImportRequestProcessor.init")
+        log.warn("TikaFileImportRequestProcessor.init")
     }
 
     private fun extractingDocumentLoader(cmd: UpdateCommand): ExtractingDocumentLoader {
@@ -52,7 +43,7 @@ class ImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProces
             // fill tikaConfig
             tikaConfig(cmd)
             extractingDocumentLoader = ExtractingDocumentLoader(
-                    cmd.req, this, tikaConfig, parseContextConfig,
+                    cmd.req, mapping, tikaConfig, parseContextConfig,
                     SolrContentHandlerFactory())
         }
         return extractingDocumentLoader as ExtractingDocumentLoader;
@@ -82,33 +73,11 @@ class ImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProces
             first = false
             val stream = ContentStreamBase.FileStream(File(
                     "/home2/tpasch/java/solr-8.3.1/example/exampledocs/solr-word.pdf"))
-            extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, this)
-
-            // TODO (tp): cmd.solrDoc contains the document -> AddUpdateCommand
-            val created = createAdd(cmd)
+            extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, mapping)
         }
         if (cmd?.solrDoc?.getField("id") != null) {
             next?.processAdd(cmd)
         }
-    }
-
-    private fun createAdd(cmd: AddUpdateCommand): AddUpdateCommand {
-        val req = ImportSolrRequest(cmd.req.core, cmd.req.params)
-        // req.json =
-        val jsonMap: MutableMap<String, Any> = HashMap();
-        cmd.solrDoc?.values?.stream()?.collect(
-            { -> HashMap<String, Any>()} as Supplier<MutableMap<String, Any>>,
-            {a: MutableMap<String, Any>, b: SolrInputField ->
-                a.put(b.name, b.value as Object)}
-                    as BiConsumer<MutableMap<String, Any>, in SolrInputField>,
-            {a: MutableMap<String, Any>, b: MutableMap<String, Any> ->
-                a.putAll(b)}
-                    as BiConsumer<MutableMap<String, Any>, MutableMap<String, Any>>
-            )
-        val json: JSONObject = JSONObject(jsonMap)
-        req.json = jsonMap
-        val result = AddUpdateCommand(req)
-        return result
     }
 
     @Throws(IOException::class)

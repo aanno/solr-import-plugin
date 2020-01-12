@@ -8,7 +8,7 @@ import org.apache.solr.update.processor.UpdateRequestProcessorFactory
 import org.slf4j.LoggerFactory
 import java.lang.invoke.MethodHandles
 
-class ImportRequestProcessorFactory : UpdateRequestProcessorFactory() {
+class TikaFileImportRequestProcessorFactory : UpdateRequestProcessorFactory() {
 
     private val log =
         LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
@@ -21,13 +21,13 @@ class ImportRequestProcessorFactory : UpdateRequestProcessorFactory() {
         if (next == null) {
             throw NullPointerException();
         }
-        return ImportRequestProcessor(next);
+        return TikaFileImportRequestProcessor(next);
     }
 
     override fun init(args: NamedList<*>?) {
         // could process the Node
         super.init(args)
-        log.warn("ImportRequestProcessorFactory.init")
+        log.warn("TikaFileImportRequestProcessorFactory.init")
         if (args != null) {
             for (entry in args) {
                 log.warn(entry.toString())
