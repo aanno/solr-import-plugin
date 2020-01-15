@@ -10,28 +10,33 @@ import java.nio.file.Paths
 
 class FileWalker(val base: Path, val pattern: Pattern) {
 
-    fun walk() {
-        val channel = Channel<Path>()
-        Files.walk(base, FileVisitOption.FOLLOW_LINKS).use { it ->
-            it.forEach { p ->
-                GlobalScope.launch {
-                    channel.send(p)
+    suspend fun walk(action: (path: Path) -> Unit) {
+        withContext(Dispatchers.Default) {
+            val channel = Channel<Path>()
+            Files.walk(base, FileVisitOption.FOLLOW_LINKS).use { it ->
+                try {
+                    it.forEach { p ->
+                        launch {
+                            channel.send(p)
+                        }
+                    }
+                } finally {
+                    channel.close()
                 }
             }
-        }
-        GlobalScope.launch {
-            for (p in channel) {
-                println(p)
+            launch {
+                for (p in channel) {
+                    action(p)
+                }
             }
         }
     }
 }
 
-fun main(args: Array<String>) {
+fun main(args: Array<String>) = runBlocking {
     val fw = FileWalker(Paths.get("/home2/tpasch/java/solr-8.3.1/example/exampledocs/"), Pattern.compile("."))
-    fw.walk()
-    runBlocking {     // but this expression blocks the main thread
-        delay(20000L)  // ... while we delay for 2 seconds to keep JVM alive
+    withContext(Dispatchers.Default) {
+        fw.walk(::println)
     }
 }
 
