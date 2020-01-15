@@ -31,9 +31,6 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
     // TODO (tp)
     private var tikaConfig: TikaConfig? = null
 
-    // TODO (tp)
-    var first = true
-
     init {
         log.warn("TikaFileImportRequestProcessor.init")
     }
@@ -69,15 +66,17 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
     @Throws(IOException::class)
     override fun processAdd(cmd: AddUpdateCommand?) {
         log.warn("processAdd: $cmd")
-        if (first && cmd != null) {
-            first = false
+        if (cmd != null) {
             val stream = ContentStreamBase.FileStream(File(
                     "/home2/tpasch/java/solr-8.3.1/example/exampledocs/solr-word.pdf"))
             extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, mapping)
         }
+        // we delegate to mapping (and then to next)
+        /*
         if (cmd?.solrDoc?.getField("id") != null) {
             next?.processAdd(cmd)
         }
+         */
     }
 
     @Throws(IOException::class)
@@ -101,7 +100,6 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
     override fun doClose() {
         super.doClose();
         log.warn("doClose")
-        first = true;
     }
 
 }

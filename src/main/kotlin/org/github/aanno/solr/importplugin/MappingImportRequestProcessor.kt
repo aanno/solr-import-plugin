@@ -25,9 +25,10 @@ class MappingImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReques
     }
 
     private fun createAdd(cmd: AddUpdateCommand): AddUpdateCommand {
+        val schema = cmd.req.schema
         val req = ImportSolrRequest(cmd.req.core, cmd.req.params)
         // req.json =
-        val jsonMap: HashMap<String, Any> = HashMap();
+        val jsonMap: HashMap<String, Any> = HashMap()
         cmd.solrDoc?.values?.stream()?.collect(
                 toSupplier { -> jsonMap},
                 toBiConsumer { a: HashMap<String, Any>, b: SolrInputField ->
@@ -35,16 +36,33 @@ class MappingImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReques
                 toBiConsumer { a: HashMap<String, Any>, b: HashMap<String, Any> ->
                     a.putAll(b) }
         )
-        val json: JSONObject = JSONObject(jsonMap)
-        json.put("id", json.get("stream_source_info"))
-        // json.put("title", json.get("dc:title"))
-        json.put("format", json.get("dc:format"))
-        json.put("_version_", json.get("pdf:docinfo:modified"))
-        // ???
-        /// req.json = json as Map<String, Object>
+
+        // mappings added to input
+        addMapField(jsonMap, "stream_source_info", "id")
+        addMapField(jsonMap, "dc:title", "title")
+        addMapField(jsonMap, "dc:format", "format")
+        addMapField(jsonMap, "pdf:docinfo:modified", "_version_")
+        addMapField(jsonMap, "Author", "author")
+        addMapField(jsonMap, "content", "text")
+
+        val schemaMap: HashMap<String, Any> = HashMap()
+        for (name in schema.fields.keys) {
+            val inVal = jsonMap.get(name)
+            if (inVal != null) {
+                schemaMap.put(name, inVal)
+            }
+        }
+
         val result = AddUpdateCommand(req)
-        result.solrDoc = SolrInputDocument(toInputDocMap(json as Map<String, Any>))
+        result.solrDoc = SolrInputDocument(toInputDocMap(schemaMap))
         return result
+    }
+
+    private fun addMapField(jsonMap: HashMap<String, Any>, src: String, tgt: String) {
+        val value = jsonMap.get(src)
+        if (value != null) {
+            jsonMap.put(tgt, value)
+        }
     }
 
     @Throws(IOException::class)
