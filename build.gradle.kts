@@ -34,7 +34,7 @@ dependencies {
     implementation("org.json", "json", "20190722")
 
     // Better testImplementation?
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.3.3")
+    // implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.3.3")
 
     testImplementation("junit", "junit", "4.12")
 }

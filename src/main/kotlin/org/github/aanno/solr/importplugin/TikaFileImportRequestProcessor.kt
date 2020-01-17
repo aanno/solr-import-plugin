@@ -2,8 +2,7 @@ package org.github.aanno.solr.importplugin
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.*
-import kotlinx.coroutines.debug.DebugProbes
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.apache.solr.common.SolrException
 import org.apache.solr.common.util.ContentStreamBase
@@ -19,7 +18,6 @@ import org.github.aanno.solr.importplugin.tika.FileWalker
 import org.slf4j.LoggerFactory
 import org.xml.sax.SAXException
 import java.io.IOException
-import java.lang.Exception
 import java.lang.invoke.MethodHandles
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -75,9 +73,11 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
 
     @Throws(IOException::class)
     override fun processAdd(cmd: AddUpdateCommand?) = runBlocking {
+        /*
         if (!DebugProbes.isInstalled) {
             DebugProbes.install()
         }
+         */
         log.warn("processAdd: $cmd")
         if (cmd != null) {
             /*
@@ -100,9 +100,7 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
                     }
                 })
             }
-            // job.join()
-            DebugProbes.dumpCoroutines()
-            channel.close()
+            // DebugProbes.dumpCoroutines()
         }
         // we delegate to mapping (and then to next)
     }

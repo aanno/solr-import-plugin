@@ -1,13 +1,12 @@
 package org.github.aanno.solr.importplugin.tika
 
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import java.nio.file.FileVisitOption
 import java.nio.file.Files
 import java.nio.file.Path
-import java.util.regex.Pattern
-import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.debug.DebugProbes
 import java.nio.file.Paths
+import java.util.regex.Pattern
 
 class FileWalker(val base: Path, val pattern: Pattern) {
 
@@ -31,18 +30,14 @@ class FileWalker(val base: Path, val pattern: Pattern) {
 }
 
 fun main(args: Array<String>) = runBlocking<Unit> {
-    DebugProbes.install()
+    // DebugProbes.install()
     val fw = FileWalker(Paths.get("/home2/tpasch/java/solr-8.3.1/example/exampledocs/"), Pattern.compile("."))
     val channel = Channel<Path>()
     val job = withContext(Dispatchers.Default) {
-        DebugProbes.dumpCoroutines()
+        // DebugProbes.dumpCoroutines()
         val innerJob = fw.walk(channel, ::println)
-        channel.close()
-        // innerJob.join()
     }
-    DebugProbes.dumpCoroutines()
-    // job.join()
-    channel.close()
-    DebugProbes.dumpCoroutines()
+    // DebugProbes.dumpCoroutines()
+    // DebugProbes.dumpCoroutines()
 }
 
