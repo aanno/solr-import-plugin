@@ -1,20 +1,25 @@
 package org.github.aanno.solr.importplugin
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.debug.DebugProbes
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import org.apache.solr.common.SolrException
-import org.apache.solr.common.util.ContentStreamBase
 import org.apache.solr.handler.extraction.ExtractingDocumentLoader
 import org.apache.solr.handler.extraction.ParseContextConfig
 import org.apache.solr.handler.extraction.SolrContentHandlerFactory
-import org.apache.solr.response.SolrQueryResponse
 import org.apache.solr.update.*
 import org.apache.solr.update.processor.UpdateRequestProcessor
 import org.apache.tika.config.TikaConfig
 import org.apache.tika.exception.TikaException
+import org.github.aanno.solr.importplugin.tika.FileWalker
 import org.slf4j.LoggerFactory
 import org.xml.sax.SAXException
-import java.io.File
 import java.io.IOException
 import java.lang.invoke.MethodHandles
+import java.nio.file.Paths
+import java.util.regex.Pattern
+
 
 class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProcessor(next) {
 
@@ -64,19 +69,31 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
     }
 
     @Throws(IOException::class)
-    override fun processAdd(cmd: AddUpdateCommand?) {
+    override fun processAdd(cmd: AddUpdateCommand?) = runBlocking {
+        if (!DebugProbes.isInstalled) {
+            DebugProbes.install()
+        }
         log.warn("processAdd: $cmd")
         if (cmd != null) {
+            /*
             val stream = ContentStreamBase.FileStream(File(
                     "/home2/tpasch/java/solr-8.3.1/example/exampledocs/solr-word.pdf"))
             extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, mapping)
+             */
+            val fw = FileWalker(Paths.get("/home2/tpasch/java/solr-8.3.1/example/exampledocs/"), Pattern.compile("."))
+            val job = withContext(Dispatchers.Default) {
+                fw.walk({ p -> log.warn("walk: $p")})
+                /*
+                fw.walk({ p ->
+                    val stream = ContentStreamBase.FileStream(p.toFile())
+                    extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, mapping)
+                })
+                */
+            }
+            job.join()
+            DebugProbes.dumpCoroutines()
         }
         // we delegate to mapping (and then to next)
-        /*
-        if (cmd?.solrDoc?.getField("id") != null) {
-            next?.processAdd(cmd)
-        }
-         */
     }
 
     @Throws(IOException::class)

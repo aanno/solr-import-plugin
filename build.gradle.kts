@@ -24,14 +24,17 @@ repositories {
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
 
-    api("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.3.3")
-    api("org.apache.solr", "solr-cell", "8.4.0") {
+    implementation("org.jetbrains.kotlinx", "kotlinx-coroutines-core", "1.3.3")
+    implementation("org.apache.solr", "solr-cell", "8.4.0") {
         exclude("org.restlet.jee", "org.restlet")
         exclude("org.restlet.jee", "org.restlet.ext.servlet")
     }
-    // api("org.apache.solr", "solr-cell", "8.4.0")
-    api("org.apache.tika", "tika-core", "1.23")
-    api("org.json", "json", "20190722")
+    // implementation("org.apache.solr", "solr-cell", "8.4.0")
+    implementation("org.apache.tika", "tika-core", "1.23")
+    implementation("org.json", "json", "20190722")
+
+    // Better testImplementation?
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-debug:1.3.3")
 
     testImplementation("junit", "junit", "4.12")
 }
