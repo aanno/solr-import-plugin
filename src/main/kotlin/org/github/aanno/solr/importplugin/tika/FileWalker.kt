@@ -11,19 +11,19 @@ import java.util.regex.Pattern
 class FileWalker(val base: Path, val pattern: Pattern) {
 
     suspend fun walk(channel: Channel<Path>, action: (path: Path) -> Unit) = coroutineScope {
-        Files.walk(base, FileVisitOption.FOLLOW_LINKS).use { it ->
-            it.forEach { p ->
-                launch {
-                    channel.send(p)
-                }
+        val it = Files.walk(base, FileVisitOption.FOLLOW_LINKS)
+        launch {
+            for (p in it) {
+                channel.send(p)
             }
-            launch {
-                channel.close()
-            }
+            channel.close()
         }
-        for (p in channel) {
+        // force a few coroutine workers
+        repeat(4) { i ->
             launch {
-                action(p)
+                for (p in channel) {
+                    action(p)
+                }
             }
         }
     }

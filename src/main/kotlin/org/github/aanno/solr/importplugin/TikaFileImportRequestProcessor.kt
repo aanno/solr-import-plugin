@@ -80,12 +80,7 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
          */
         log.warn("processAdd: $cmd")
         if (cmd != null) {
-            /*
-            val stream = ContentStreamBase.FileStream(File(
-                    "/home2/tpasch/java/solr-8.3.1/example/exampledocs/solr-word.pdf"))
-            extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, mapping)
-             */
-            val channel = Channel<Path>()
+            val channel = Channel<Path>(4)
             val fw = FileWalker(Paths.get("/home2/tpasch/java/solr-8.3.1/example/exampledocs/"), Pattern.compile("."))
             val job = withContext(Dispatchers.Default) {
                 // fw.walk(channel, { p -> log.warn("walk: $p")})
