@@ -1,8 +1,9 @@
 package org.github.aanno.solr.importplugin
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.debug.DebugProbes
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.apache.solr.common.SolrException
 import org.apache.solr.handler.extraction.ExtractingDocumentLoader
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory
 import org.xml.sax.SAXException
 import java.io.IOException
 import java.lang.invoke.MethodHandles
+import java.nio.file.Path
 import java.nio.file.Paths
 import java.util.regex.Pattern
 
@@ -80,9 +82,10 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
                     "/home2/tpasch/java/solr-8.3.1/example/exampledocs/solr-word.pdf"))
             extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, mapping)
              */
+            val channel = Channel<Path>()
             val fw = FileWalker(Paths.get("/home2/tpasch/java/solr-8.3.1/example/exampledocs/"), Pattern.compile("."))
             val job = withContext(Dispatchers.Default) {
-                fw.walk({ p -> log.warn("walk: $p")})
+                fw.walk(channel, { p -> log.warn("walk: $p")})
                 /*
                 fw.walk({ p ->
                     val stream = ContentStreamBase.FileStream(p.toFile())
@@ -90,8 +93,9 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
                 })
                 */
             }
-            job.join()
+            // job.join()
             DebugProbes.dumpCoroutines()
+            channel.close()
         }
         // we delegate to mapping (and then to next)
     }
