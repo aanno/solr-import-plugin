@@ -7,15 +7,18 @@ import org.apache.solr.update.CommitUpdateCommand
 import org.apache.solr.update.DeleteUpdateCommand
 import org.apache.solr.update.MergeIndexesCommand
 import org.apache.solr.update.processor.UpdateRequestProcessor
-import org.jose4j.json.internal.json_simple.JSONObject
 import org.slf4j.LoggerFactory
 import java.io.IOException
 import java.lang.invoke.MethodHandles
-import java.util.HashMap
+import java.util.*
+import java.util.concurrent.BlockingDeque
 import java.util.function.BiConsumer
 import java.util.function.Supplier
 
-class MappingImportRequestProcessor(next: UpdateRequestProcessor) : UpdateRequestProcessor(next) {
+class MappingImportRequestProcessor(
+    private val queue: BlockingDeque<AddUpdateCommand>,
+    next: UpdateRequestProcessor)
+    : UpdateRequestProcessor(next) {
 
     private val log =
         LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
@@ -71,11 +74,14 @@ class MappingImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReques
         if (cmd != null) {
             // TODO (tp): cmd.solrDoc contains the document -> AddUpdateCommand
             val created = createAdd(cmd)
-            next.processAdd(created)
+            // next.processAdd(created)
+            queue.put(created)
         }
+        /*
         if (cmd?.solrDoc?.getField("id") != null) {
             next?.processAdd(cmd)
         }
+         */
     }
 
     @Throws(IOException::class)
@@ -99,6 +105,8 @@ class MappingImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReques
     override fun doClose() {
         super.doClose();
         log.warn("doClose")
+        // ???
+        // queue.put(END_UPDATES)
     }
 
 }

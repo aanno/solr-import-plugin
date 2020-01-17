@@ -1,7 +1,6 @@
 package org.github.aanno.solr.importplugin
 
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import org.apache.solr.common.SolrException
@@ -14,13 +13,15 @@ import org.apache.solr.update.*
 import org.apache.solr.update.processor.UpdateRequestProcessor
 import org.apache.tika.config.TikaConfig
 import org.apache.tika.exception.TikaException
+import org.github.aanno.solr.importplugin.tika.END_UPDATES
 import org.github.aanno.solr.importplugin.tika.FileWalker
 import org.slf4j.LoggerFactory
 import org.xml.sax.SAXException
 import java.io.IOException
 import java.lang.invoke.MethodHandles
-import java.nio.file.Path
 import java.nio.file.Paths
+import java.util.concurrent.BlockingDeque
+import java.util.concurrent.LinkedBlockingDeque
 import java.util.regex.Pattern
 
 
@@ -29,7 +30,9 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
     private val log =
         LoggerFactory.getLogger(MethodHandles.lookup().lookupClass())
 
-    private val mapping = MappingImportRequestProcessor(next)
+    private val queue: BlockingDeque<AddUpdateCommand> = LinkedBlockingDeque<AddUpdateCommand>();
+
+    private val mapping = MappingImportRequestProcessor(queue, next)
 
     // TODO (tp)
     private val parseContextConfig: ParseContextConfig = ParseContextConfig()
@@ -80,11 +83,10 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
          */
         log.warn("processAdd: $cmd")
         if (cmd != null) {
-            val channel = Channel<Path>(4)
             val fw = FileWalker(Paths.get("/home2/tpasch/java/solr-8.3.1/example/exampledocs/"), Pattern.compile("."))
             val job = withContext(Dispatchers.Default) {
                 // fw.walk(channel, { p -> log.warn("walk: $p")})
-                fw.walk(channel, { p ->
+                fw.walk(queue, { p ->
                     if (p.toFile().isFile) {
                         val stream = ContentStreamBase.FileStream(p.toFile())
                         try {
@@ -94,8 +96,18 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
                         }
                     }
                 })
+                // DebugProbes.dumpCoroutines()
+                var add = queue.take()
+                while (add !== END_UPDATES) {
+                    try {
+                        next.processAdd(add)
+                    } catch (e: Exception) {
+                        log.error("solr failed: " + e, e)
+                    }
+                    add = queue.take()
+                }
             }
-            // DebugProbes.dumpCoroutines()
+            queue.clear()
         }
         // we delegate to mapping (and then to next)
     }
