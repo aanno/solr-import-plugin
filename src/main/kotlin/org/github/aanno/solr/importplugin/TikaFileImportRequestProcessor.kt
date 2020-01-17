@@ -6,9 +6,11 @@ import kotlinx.coroutines.*
 import kotlinx.coroutines.debug.DebugProbes
 import kotlinx.coroutines.withContext
 import org.apache.solr.common.SolrException
+import org.apache.solr.common.util.ContentStreamBase
 import org.apache.solr.handler.extraction.ExtractingDocumentLoader
 import org.apache.solr.handler.extraction.ParseContextConfig
 import org.apache.solr.handler.extraction.SolrContentHandlerFactory
+import org.apache.solr.response.SolrQueryResponse
 import org.apache.solr.update.*
 import org.apache.solr.update.processor.UpdateRequestProcessor
 import org.apache.tika.config.TikaConfig
@@ -17,6 +19,7 @@ import org.github.aanno.solr.importplugin.tika.FileWalker
 import org.slf4j.LoggerFactory
 import org.xml.sax.SAXException
 import java.io.IOException
+import java.lang.Exception
 import java.lang.invoke.MethodHandles
 import java.nio.file.Path
 import java.nio.file.Paths
@@ -85,13 +88,17 @@ class TikaFileImportRequestProcessor(next: UpdateRequestProcessor) : UpdateReque
             val channel = Channel<Path>()
             val fw = FileWalker(Paths.get("/home2/tpasch/java/solr-8.3.1/example/exampledocs/"), Pattern.compile("."))
             val job = withContext(Dispatchers.Default) {
-                fw.walk(channel, { p -> log.warn("walk: $p")})
-                /*
-                fw.walk({ p ->
-                    val stream = ContentStreamBase.FileStream(p.toFile())
-                    extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, mapping)
+                // fw.walk(channel, { p -> log.warn("walk: $p")})
+                fw.walk(channel, { p ->
+                    if (p.toFile().isFile) {
+                        val stream = ContentStreamBase.FileStream(p.toFile())
+                        try {
+                            extractingDocumentLoader(cmd).load(cmd.req, SolrQueryResponse(), stream, mapping)
+                        } catch (e: Exception) {
+                            log.error("tika failed: " + e, e)
+                        }
+                    }
                 })
-                */
             }
             // job.join()
             DebugProbes.dumpCoroutines()
